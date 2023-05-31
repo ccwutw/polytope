@@ -15,6 +15,7 @@ from polytope.shapes import (
     ConvexPolytope,
     Disk,
     PathSegment,
+    Path,
     Polygon,
     Select,
     Span,
@@ -59,4 +60,36 @@ class TestEDRInterface:
         result = self.API.retrieve(request)
         assert len(result.leaves) == 18
 
-    #def test_EDR_polygon(self):
+    def test_EDR_polygon(self):
+        p1 = wkt.loads('POLYGON((1 3,4 7,5 8,6 4,1 3))')
+        points = list(p1.exterior.coords)
+        request = Request(Polygon(["lat", "long"], points), Select("date", ["2000-01-01"]))
+        result = self.API.retrieve(request)
+        assert len(result.leaves) == 14
+
+    def test_EDR_cube(self):
+        p1 = wkt.loads('MULTIPOINT ((10 40), (40 30))')
+        corners = [[p1.bounds[0], p1.bounds[1]], [p1.bounds[2], p1.bounds[3]]]
+        request = Request(Box(["lat", "long"], [p1.bounds[0], p1.bounds[1]], [p1.bounds[2], p1.bounds[3]]), Select("date", ["2000-01-01"]))
+        result = self.API.retrieve(request)
+        assert len(result.leaves) == 341
+
+    def test_EDR_trajectory(self):
+        p1 = wkt.loads('LINESTRING(10 10 , 15 15, 20 20, 70 80)')
+        points = list(p1.coords)
+        box1 = Box(["lat", "long"], [0, 0], [0, 0])
+        request = Request(
+            Path(["lat", "long"], box1, [10,10], [15,15], [20,20], [70, 80]), Select("date", ["2000-01-01"])
+        )
+        result = self.API.retrieve(request)
+        assert len(result.leaves) == 21
+
+    def test_EDR_corridor(self):
+        p1 = wkt.loads('LINESTRING(10 10 , 15 15, 20 20, 70 80)')
+        points = list(p1.coords)
+        box1 = Box(["lat", "long"], [0, 0], [1, 1])
+        request = Request(
+            Path(["lat", "long"], box1, [10,10], [15,15], [20,20], [70, 80]), Select("date", ["2000-01-01"])
+        )
+        result = self.API.retrieve(request)
+        assert len(result.leaves) == 154
